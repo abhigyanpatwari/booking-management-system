@@ -1,0 +1,25 @@
+
+1. Root directory `.gitignore`:
+```gitignore
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deno
+deno.lock
+```

@@ -1,0 +1,12 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write main.ts"
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1",
+    "oauth2_client": "https://deno.land/x/oauth2_client@v1.0.2/mod.ts",
+    "mongoose": "npm:mongoose@7.6.3",
+    "zod": "https://deno.land/x/zod@v3.21.4/mod.ts",
+    "djwt": "https://deno.land/x/djwt@v2.9.1/mod.ts"
+  }
+}
