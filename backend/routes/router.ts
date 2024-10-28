@@ -37,6 +37,7 @@ router.use(authenticateToken);
 router.post("/bookings", validate(createBookingSchema), bookingController.createBooking);
 router.get("/bookings", bookingController.getUserBookings);
 router.get("/bookings/:id", bookingController.getBookingById);
+router.delete("/bookings/:id", authenticateToken, bookingController.cancelBooking);
 
 // User routes
 router.get("/users/me", userController.getCurrentUser);

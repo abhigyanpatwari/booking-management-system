@@ -110,19 +110,25 @@ export const getBookingById = async (req: Request, res: Response) => {
 export const cancelBooking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const booking = await Booking.findById(id);
     
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid booking ID format" });
+    }
+
+    const booking = await Booking.findById(id);
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    await Booking.findByIdAndDelete(id);
-
-    const slot = await TimeSlot.findById(booking.timeSlot);
-    if (slot) {
-      slot.isBooked = false;
-      await slot.save();
+    // Find and update the time slot first
+    const timeSlot = await TimeSlot.findById(booking.timeSlot);
+    if (timeSlot) {
+      timeSlot.isBooked = false;
+      await timeSlot.save();
     }
+
+    // Then delete the booking
+    await Booking.findByIdAndDelete(id);
 
     res.json({ message: "Booking cancelled successfully" });
   } catch (error) {

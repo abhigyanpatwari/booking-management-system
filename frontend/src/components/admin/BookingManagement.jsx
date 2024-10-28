@@ -25,12 +25,24 @@ const BookingManagement = () => {
   const handleCancelBooking = async (bookingId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/v1/bookings/${bookingId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchBookings();
+      console.log('Canceling booking:', bookingId);
+      
+      const response = await axios.delete(
+        `http://localhost:3000/api/v1/bookings/${bookingId}`,  // Remove 'admin' from the URL
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data) {
+        fetchBookings();
+      }
     } catch (error) {
-      console.error("Error canceling booking:", error);
+      console.error("Error canceling booking:", {
+        error: error.response?.data,
+        bookingId,
+        status: error.response?.status
+      });
     }
   };
 
