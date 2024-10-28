@@ -73,9 +73,12 @@ const ServiceManagement = () => {
             dayOfWeek,
             startTime,
             endTime,
-            interval
+            interval,
+            isEnabled: true  // Explicitly include this
           }))
       };
+      
+      console.log('Service data being sent:', serviceData);
       
       const response = await axios.post(
         "http://localhost:3000/api/v1/admin/services", 
@@ -139,6 +142,20 @@ const ServiceManagement = () => {
       console.error("Error deleting service:", error);
       setError("Failed to delete service. Please try again.");
     }
+  };
+
+  const handleScheduleToggle = (dayIndex) => {
+    setNewService(prev => ({
+      ...prev,
+      schedule: prev.schedule.map((day, index) => 
+        index === dayIndex 
+          ? { ...day, isEnabled: !day.isEnabled }
+          : day
+      )
+    }));
+    
+    // Debug log
+    console.log('Schedule after toggle:', newService.schedule);
   };
 
   return (
@@ -218,21 +235,7 @@ const ServiceManagement = () => {
                     <Checkbox
                       id={`day-${day.id}`}
                       checked={newService.schedule?.[day.id]?.isEnabled}
-                      onCheckedChange={(checked) => {
-                        const updatedSchedule = [...(newService.schedule || [])];
-                        updatedSchedule[day.id] = {
-                          ...updatedSchedule[day.id],
-                          dayOfWeek: day.id,
-                          isEnabled: checked,
-                          startTime: "09:00",
-                          endTime: "17:00",
-                          interval: 30
-                        };
-                        setNewService({
-                          ...newService,
-                          schedule: updatedSchedule
-                        });
-                      }}
+                      onCheckedChange={() => handleScheduleToggle(day.id)}
                     />
                     <Label htmlFor={`day-${day.id}`}>{day.name}</Label>
                     

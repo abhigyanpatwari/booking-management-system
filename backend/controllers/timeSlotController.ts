@@ -149,7 +149,6 @@ export const generateTimeSlotsForService = async (req: Request, res: Response) =
       return res.status(404).json({ message: "Service not found" });
     }
 
-    // Generate slots for the next bookingTimeLimit days
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + service.bookingTimeLimit);
@@ -161,12 +160,18 @@ export const generateTimeSlotsForService = async (req: Request, res: Response) =
       isBooked: false
     });
 
-    // Generate new slots
+    // Generate and save new slots
     const newSlots = await generateTimeSlots(service, startDate, endDate);
-    await TimeSlot.insertMany(newSlots);
+    const savedSlots = await TimeSlot.insertMany(newSlots);
 
-    res.json({ message: "Time slots generated successfully" });
+    console.log(`Generated and saved ${savedSlots.length} slots for service ${service.name}`);
+
+    res.json({ 
+      message: "Time slots generated successfully",
+      slotsGenerated: savedSlots.length
+    });
   } catch (error) {
+    console.error('Error generating time slots:', error);
     if (error instanceof Error) {
       res.status(500).json({ message: error.message });
     } else {

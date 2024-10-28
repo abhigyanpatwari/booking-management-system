@@ -5,11 +5,19 @@ export const generateTimeSlots = async (service: any, startDate: Date, endDate: 
   const currentDate = new Date(startDate);
   const holidays = await getHolidays("US", currentDate.getFullYear());
 
+  console.log('Generating slots with service:', {
+    schedule: service.schedule,
+    duration: service.duration,
+    bookingTimeLimit: service.bookingTimeLimit
+  });
+
   while (currentDate <= endDate) {
     const dayOfWeek = currentDate.getDay();
     const schedule = service.schedule.find((s: any) => s.dayOfWeek === dayOfWeek && s.isEnabled);
 
     if (schedule) {
+      console.log(`Processing schedule for ${currentDate.toDateString()}:`, schedule);
+      
       const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
       const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
       
@@ -18,6 +26,8 @@ export const generateTimeSlots = async (service: any, startDate: Date, endDate: 
       
       const endTime = new Date(currentDate);
       endTime.setHours(endHour, endMinute, 0);
+
+      console.log(`Creating slots between ${slotTime} and ${endTime}`);
 
       while (slotTime < endTime) {
         const slotEndTime = new Date(slotTime);
@@ -39,5 +49,6 @@ export const generateTimeSlots = async (service: any, startDate: Date, endDate: 
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
+  console.log(`Generated ${slots.length} slots`);
   return slots;
 };
