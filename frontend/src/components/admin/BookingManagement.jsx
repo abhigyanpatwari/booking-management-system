@@ -25,7 +25,7 @@ const BookingManagement = () => {
   const handleCancelBooking = async (bookingId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/api/v1/admin/bookings/${bookingId}`, {
+      await axios.delete(`http://localhost:3000/api/v1/bookings/${bookingId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchBookings();
@@ -41,13 +41,18 @@ const BookingManagement = () => {
         {bookings.map((booking) => (
           <Card key={booking._id}>
             <CardHeader>
-              <CardTitle>{new Date(booking.timeSlot.startTime).toLocaleString()}</CardTitle>
+              <CardTitle>
+                {new Date(booking.timeSlot.startTime).toLocaleString()}
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p>User: {booking.user.name}</p>
-              <p>Service: {booking.service.name}</p>
+              <p>User: {booking.patient.name}</p>
+              <p>Service: {booking.timeSlot.service.name}</p>
               <p>End: {new Date(booking.timeSlot.endTime).toLocaleString()}</p>
-              <Button onClick={() => handleCancelBooking(booking._id)} variant="destructive">
+              <Button 
+                onClick={() => handleCancelBooking(booking._id)} 
+                variant="destructive"
+              >
                 Cancel Booking
               </Button>
             </CardContent>

@@ -174,3 +174,48 @@ export const generateTimeSlotsForService = async (req: Request, res: Response) =
     }
   }
 };
+
+export const getTimeSlotsByService = async (req: Request, res: Response) => {
+  try {
+    const { serviceId } = req.params;
+    
+    const timeSlots = await TimeSlot.find({
+      service: serviceId,
+      startTime: { $gte: new Date() }, // Only future time slots
+      isBooked: false
+    })
+    .populate('service')
+    .sort({ startTime: 1 });
+
+    if (!timeSlots) {
+      return res.status(404).json({ message: "No time slots found" });
+    }
+
+    res.json(timeSlots);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' });
+    }
+  }
+};
+
+export const getAllTimeSlots = async (_req: Request, res: Response) => {
+  try {
+    const timeSlots = await TimeSlot.find({
+      startTime: { $gte: new Date() }, // Only future time slots
+      isBooked: false
+    })
+    .populate('service')
+    .sort({ startTime: 1 });
+
+    res.json(timeSlots);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: 'An unknown error occurred' });
+    }
+  }
+};

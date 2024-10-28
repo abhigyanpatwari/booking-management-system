@@ -1,44 +1,33 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
-} from "@/components/ui/select";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useNavigate, useLocation } from "react-router-dom";
+import BookingCalendar from "@/components/booking/BookingCalendar";
+import TimeSlotGrid from "@/components/booking/TimeSlotGrid";
+
+const STEPS = {
+  SELECT_SERVICE: 0,
+  SELECT_DATE: 1,
+  SELECT_TIME: 2
+};
 
 const Bookings = () => {
   const navigate = useNavigate();
-  const [timeSlots, setTimeSlots] = useState([]);
+  const [currentStep, setCurrentStep] = useState(STEPS.SELECT_SERVICE);
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [services, setServices] = useState([]);
-  const [selectedService, setSelectedService] = useState("all");
+  const [timeSlots, setTimeSlots] = useState([]);
   const [error, setError] = useState("");
-  const location = useLocation();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/login", { state: { from: "/bookings" } });
-      return;
-    }
-
-    // Get service ID from URL parameters
-    const params = new URLSearchParams(location.search);
-    const serviceId = params.get('service');
-    if (serviceId) {
-      setSelectedService(serviceId);
-    }
-
     fetchServices();
-    fetchTimeSlots();
-  }, [navigate, location]);
+  }, []);
 
   const fetchServices = async () => {
     try {
@@ -46,10 +35,13 @@ const Bookings = () => {
       setServices(response.data);
     } catch (error) {
       console.error("Error fetching services:", error);
+      setError("Failed to load services. Please try again.");
     }
   };
 
   const fetchTimeSlots = async () => {
+    if (!selectedService) return;
+    
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -57,16 +49,15 @@ const Bookings = () => {
         return;
       }
 
-      const url = selectedService && selectedService !== "all"
-        ? `http://localhost:3000/api/v1/services/${selectedService}/timeslots`
-        : "http://localhost:3000/api/v1/timeslots";
-      
-      const response = await axios.get(url, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      });
+      const response = await axios.get(
+        `http://localhost:3000/api/v1/services/${selectedService}/timeslots`,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+        }
+      );
 
       if (response.data) {
         setTimeSlots(response.data);
@@ -80,32 +71,97 @@ const Bookings = () => {
       if (error.response?.status === 401) {
         navigate("/login", { state: { from: "/bookings" } });
       } else {
-        setError(error.response?.data?.message || "Failed to fetch available time slots. Please try again.");
+        setError(error.response?.data?.message || "Failed to fetch available time slots");
       }
       setTimeSlots([]);
     }
   };
 
-  // Effect to refetch time slots when service filter changes
   useEffect(() => {
-    fetchTimeSlots();
+    if (selectedService) {
+      fetchTimeSlots();
+    }
   }, [selectedService]);
 
-  const handleBooking = async (timeSlotId) => {
+  const handleServiceSelect = async (serviceId) => {
+    setSelectedService(serviceId);
+    setCurrentStep(STEPS.SELECT_DATE);
+  };
+
+  const handleDateSelect = (date) => {
+    setSelectedDate(date);
+    setCurrentStep(STEPS.SELECT_TIME);
+  };
+
+  const handleTimeSlotSelect = async (slot) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:3000/api/v1/bookings", { timeSlot: timeSlotId }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchTimeSlots();
+      await axios.post(
+        "http://localhost:3000/api/v1/bookings",
+        { timeSlot: slot._id },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      navigate("/dashboard");
     } catch (error) {
-      console.error("Error booking appointment:", error);
       setError("Failed to book appointment. Please try again.");
     }
   };
 
+  const renderStep = () => {
+    switch (currentStep) {
+      case STEPS.SELECT_SERVICE:
+        return (
+          <div className="space-y-4">
+            <Label>Select a Service</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {services.map((service) => (
+                <Card 
+                  key={service._id}
+                  className="cursor-pointer hover:border-primary"
+                  onClick={() => handleServiceSelect(service._id)}
+                >
+                  <CardHeader>
+                    <CardTitle>{service.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>Duration: {service.duration} minutes</p>
+                    <p>Price: ${service.price}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+
+      case STEPS.SELECT_DATE:
+        return (
+          <div className="space-y-4">
+            <Label>Select a Date</Label>
+            <BookingCalendar
+              selectedDate={selectedDate}
+              onSelect={handleDateSelect}
+              service={services.find(s => s._id === selectedService)}
+              availableDates={timeSlots}
+            />
+          </div>
+        );
+
+      case STEPS.SELECT_TIME:
+        return (
+          <div className="space-y-4">
+            <Label>Select a Time</Label>
+            <TimeSlotGrid
+              timeSlots={timeSlots}
+              selectedDate={selectedDate}
+              onSelectSlot={handleTimeSlotSelect}
+            />
+          </div>
+        );
+    }
+  };
+
   return (
-    <div>
+    <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Book an Appointment</h1>
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -114,65 +170,7 @@ const Bookings = () => {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      <div className="mb-6">
-        <Label htmlFor="service">Filter by Service</Label>
-        <Select
-          value={selectedService}
-          onValueChange={setSelectedService}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="All Services" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Services</SelectItem>
-            {services.map((service) => (
-              <SelectItem key={service._id} value={service._id}>
-                {service.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-        {timeSlots.map((slot) => (
-          <Card key={slot._id} className="flex flex-col">
-            <CardHeader>
-              <CardTitle>
-                {slot.service.name}
-              </CardTitle>
-              <CardDescription>
-                {new Date(slot.startTime).toLocaleString()} - {new Date(slot.endTime).toLocaleString()}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-500">
-                Duration: {slot.service.duration} minutes
-              </p>
-              <p className="text-sm font-semibold">
-                Price: ${slot.service.price}
-              </p>
-            </CardContent>
-            <CardFooter className="mt-auto">
-              <Button
-                className="w-full"
-                onClick={() => handleBooking(slot._id)}
-                disabled={slot.isBooked || slot.isHoliday}
-              >
-                {slot.isBooked 
-                  ? "Already Booked" 
-                  : slot.isHoliday 
-                    ? "Holiday" 
-                    : "Book Appointment"}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-        {timeSlots.length === 0 && (
-          <div className="col-span-full text-center py-10">
-            <p className="text-gray-500">No available time slots found.</p>
-          </div>
-        )}
-      </div>
+      {renderStep()}
     </div>
   );
 };

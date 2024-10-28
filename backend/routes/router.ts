@@ -29,10 +29,11 @@ router.get("/auth/google/callback", oauthController.handleOAuthCallback);
 
 // Public routes
 router.get("/services", serviceController.getAllServices);
+router.get("/timeslots", timeSlotController.getAllTimeSlots);
+router.get("/services/:serviceId/timeslots", timeSlotController.getTimeSlotsByService);
 
 // Protected routes (non-admin)
 router.use(authenticateToken);
-router.get("/timeslots", timeSlotController.getAvailableTimeSlots);
 router.post("/bookings", validate(createBookingSchema), bookingController.createBooking);
 router.get("/bookings", bookingController.getUserBookings);
 router.get("/bookings/:id", bookingController.getBookingById);
