@@ -7,34 +7,33 @@ const BookingCalendar = ({
   service,
   availableDates = [] 
 }) => {
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + (service?.bookingTimeLimit || 0));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const serviceStartDate = new Date(service.startDate);
+  serviceStartDate.setHours(0, 0, 0, 0);
+  
+  const serviceEndDate = new Date(service.endDate);
+  serviceEndDate.setHours(23, 59, 59, 999);
 
-  const isDateAvailable = (date) => {
-    return availableDates.some(slot => 
-      new Date(slot.startTime).toDateString() === date.toDateString()
-    );
-  };
+  // Get enabled days from service schedule
+  const enabledDays = new Set(service.schedule.filter(s => s.isEnabled).map(s => s.dayOfWeek));
 
   return (
     <Calendar
       mode="single"
       selected={selectedDate}
       onSelect={onSelect}
-      disabled={(date) => 
-        date < new Date() || 
-        date > maxDate || 
-        !isDateAvailable(date)
-      }
-      modifiers={{
-        holiday: (date) => availableDates.some(slot => 
-          new Date(slot.startTime).toDateString() === date.toDateString() && 
-          slot.isHoliday
-        )
-      }}
-      modifiersClassNames={{
-        holiday: "text-red-500 line-through",
-        disabled: "text-gray-300"
+      disabled={(date) => {
+        const dayOfWeek = date.getDay();
+        return (
+          date < Math.max(today, serviceStartDate) || 
+          date > serviceEndDate || 
+          !enabledDays.has(dayOfWeek) ||
+          !availableDates.some(slot => 
+            new Date(slot.startTime).toDateString() === date.toDateString()
+          )
+        );
       }}
       className="rounded-md border"
     />

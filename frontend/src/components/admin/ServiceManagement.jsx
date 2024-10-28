@@ -15,6 +15,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Calendar } from "@/components/ui/calendar";
+import { addDays, format } from "date-fns";
 
 const DAYS_OF_WEEK = [
   { id: 0, name: "Sunday" },
@@ -33,7 +35,8 @@ const ServiceManagement = () => {
     description: "",
     duration: "",
     price: "",
-    bookingTimeLimit: "",
+    startDate: new Date(),
+    endDate: new Date(),
     schedule: DAYS_OF_WEEK.map(day => ({
       dayOfWeek: day.id,
       isEnabled: false,
@@ -65,43 +68,64 @@ const ServiceManagement = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem("token");
+      const duration = parseInt(newService.duration);
+      const price = parseFloat(newService.price);
+
+      // Add validation logging
+      console.log('Validating service data:', {
+        duration: {
+          raw: newService.duration,
+          parsed: duration,
+          isValid: !isNaN(duration)
+        },
+        price: {
+          raw: newService.price,
+          parsed: price,
+          isValid: !isNaN(price)
+        }
+      });
+
       const serviceData = {
-        ...newService,
+        name: newService.name,
+        description: newService.description,
+        duration,
+        price,
+        startDate: newService.startDate.toISOString(),
+        endDate: newService.endDate.toISOString(),
         schedule: newService.schedule
           .filter(slot => slot.isEnabled)
           .map(({ dayOfWeek, startTime, endTime, interval }) => ({
             dayOfWeek,
             startTime,
             endTime,
-            interval,
-            isEnabled: true  // Explicitly include this
+            interval: parseInt(interval),
+            isEnabled: true
           }))
       };
-      
-      console.log('Service data being sent:', serviceData);
-      
+
+      console.log('Sending service data:', JSON.stringify(serviceData, null, 2));
+
       const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/services", 
+        "http://localhost:3000/api/v1/admin/services",
         serviceData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      // Generate time slots for the new service
       await axios.post(
         `http://localhost:3000/api/v1/admin/services/${response.data._id}/generate-slots`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
+      fetchServices();
       setNewService({
         name: "",
         description: "",
         duration: "",
         price: "",
-        bookingTimeLimit: "",
+        startDate: new Date(),
+        endDate: new Date(),
         schedule: DAYS_OF_WEEK.map(day => ({
           dayOfWeek: day.id,
           isEnabled: false,
@@ -110,11 +134,9 @@ const ServiceManagement = () => {
           interval: 30
         }))
       });
-      setError("Service created and time slots generated successfully!");
-      fetchServices();
     } catch (error) {
-      console.error("Error adding service:", error);
-      setError("Failed to add service. Please try again.");
+      console.error("Error adding service:", error.response?.data || error);
+      setError(error.response?.data?.message || "Failed to add service. Please try again.");
     }
   };
 
@@ -157,6 +179,42 @@ const ServiceManagement = () => {
     // Debug log
     console.log('Schedule after toggle:', newService.schedule);
   };
+
+  const renderDatePicker = () => (
+    <div className="space-y-4">
+      <Label>Service Period</Label>
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="space-y-2">
+          <Label>Start Date</Label>
+          <Calendar
+            mode="single"
+            selected={newService.startDate}
+            onSelect={(date) => {
+              if (date) {
+                setNewService(prev => ({
+                  ...prev,
+                  startDate: date,
+                  endDate: prev.endDate < date ? date : prev.endDate
+                }));
+              }
+            }}
+            disabled={(date) => date < new Date()}
+            className="rounded-md border"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>End Date</Label>
+          <Calendar
+            mode="single"
+            selected={newService.endDate}
+            onSelect={(date) => date && setNewService(prev => ({ ...prev, endDate: date }))}
+            disabled={(date) => date < newService.startDate}
+            className="rounded-md border"
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div>
@@ -216,17 +274,7 @@ const ServiceManagement = () => {
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="bookingTimeLimit">Booking Time Limit</Label>
-              <Input
-                id="bookingTimeLimit"
-                type="number"
-                value={newService.bookingTimeLimit}
-                onChange={(e) => setNewService({ ...newService, bookingTimeLimit: e.target.value })}
-                placeholder="Enter booking time limit"
-                required
-              />
-            </div>
+            {renderDatePicker()}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Operating Hours</h3>
               {DAYS_OF_WEEK.map((day) => (
@@ -314,7 +362,11 @@ const ServiceManagement = () => {
               <div className="space-y-2">
                 <p>Duration: {service.duration} minutes</p>
                 <p>Price: ${service.price}</p>
-                <p>Booking Time Limit: {service.bookingTimeLimit} days</p>
+                <p>Service Period: {
+                  service.startDate && service.endDate 
+                    ? `${format(new Date(service.startDate), 'PPP')} - ${format(new Date(service.endDate), 'PPP')}`
+                    : 'Date range not set'
+                }</p>
                 <div className="mt-4">
                   <h4 className="font-semibold mb-2">Operating Hours</h4>
                   {service.schedule.map((day) => (

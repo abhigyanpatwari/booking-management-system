@@ -3,15 +3,25 @@ import Service from "../models/Service.ts";
 
 export const createService = async (req: Request, res: Response) => {
   try {
-    const { name, description, duration, price, bookingTimeLimit, schedule } = req.body;
+    const { name, description, duration, price, schedule, startDate, endDate } = req.body;
     
+    console.log('Received service data:', {
+      name,
+      duration: { value: duration, type: typeof duration },
+      price: { value: price, type: typeof price },
+      schedule: schedule.length,
+      startDate,
+      endDate
+    });
+
     // Convert string values to numbers
     const serviceData = {
       name,
       description,
       duration: Number(duration),
       price: Number(price),
-      bookingTimeLimit: Number(bookingTimeLimit),
+      startDate,
+      endDate,
       schedule: schedule.map((slot: any) => ({
         ...slot,
         interval: Number(slot.interval)
@@ -19,11 +29,15 @@ export const createService = async (req: Request, res: Response) => {
     };
 
     // Validate the data
-    if (isNaN(serviceData.duration) || 
-        isNaN(serviceData.price) || 
-        isNaN(serviceData.bookingTimeLimit)) {
+    if (isNaN(serviceData.duration) || isNaN(serviceData.price)) {
       return res.status(400).json({ 
-        message: "Duration, price, and booking time limit must be valid numbers" 
+        message: "Duration and price must be valid numbers",
+        debug: {
+          receivedDuration: duration,
+          receivedPrice: price,
+          parsedDuration: serviceData.duration,
+          parsedPrice: serviceData.price
+        }
       });
     }
 
@@ -31,6 +45,7 @@ export const createService = async (req: Request, res: Response) => {
     await service.save();
     res.status(201).json(service);
   } catch (error) {
+    console.error('Service creation error:', error);
     if (error instanceof Error) {
       res.status(400).json({ message: error.message });
     } else {

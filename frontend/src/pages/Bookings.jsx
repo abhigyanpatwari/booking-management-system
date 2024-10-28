@@ -49,6 +49,9 @@ const Bookings = () => {
         return;
       }
 
+      const service = services.find(s => s._id === selectedService);
+      if (!service) return;
+
       const response = await axios.get(
         `http://localhost:3000/api/v1/services/${selectedService}/timeslots`,
         {
@@ -56,6 +59,10 @@ const Bookings = () => {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
+          params: {
+            startDate: service.startDate,
+            endDate: service.endDate
+          }
         }
       );
 
@@ -134,13 +141,14 @@ const Bookings = () => {
         );
 
       case STEPS.SELECT_DATE:
+        const selectedServiceData = services.find(s => s._id === selectedService);
         return (
           <div className="space-y-4">
             <Label>Select a Date</Label>
             <BookingCalendar
               selectedDate={selectedDate}
               onSelect={handleDateSelect}
-              service={services.find(s => s._id === selectedService)}
+              service={selectedServiceData}
               availableDates={timeSlots}
             />
           </div>

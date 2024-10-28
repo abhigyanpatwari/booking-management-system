@@ -7,7 +7,8 @@ interface ITimeSlot {
     name: string;
     duration: number;
     price: number;
-    bookingTimeLimit: number;
+    startDate: Date;
+    endDate: Date;
   };
   startTime: Date;
   endTime: Date;

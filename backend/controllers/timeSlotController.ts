@@ -15,11 +15,22 @@ export const createTimeSlot = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    const maxBookingDate = new Date();
-    maxBookingDate.setDate(maxBookingDate.getDate() + serviceDoc.bookingTimeLimit);
+    // Validate time slot is within service period
+    const slotStart = new Date(startTime);
+    const slotEnd = new Date(endTime);
+    const serviceStart = new Date(serviceDoc.startDate);
+    const serviceEnd = new Date(serviceDoc.endDate);
 
-    if (new Date(startTime) > maxBookingDate) {
-      return res.status(400).json({ message: "Time slot is beyond the booking time limit" });
+    if (slotStart < serviceStart || slotEnd > serviceEnd) {
+      return res.status(400).json({ 
+        message: "Time slot is outside of service period",
+        debug: {
+          slotStart,
+          slotEnd,
+          serviceStart,
+          serviceEnd
+        }
+      });
     }
 
     // Check for overlapping time slots
@@ -58,46 +69,29 @@ export const getAvailableTimeSlots = async (req: Request, res: Response) => {
     const currentDate = new Date();
     const { service } = req.query;
 
-    const query: any = { 
-      isBooked: false,
-      startTime: { $gte: currentDate }
-    };
-
-    if (service) {
-      query.service = service;
+    if (!service) {
+      return res.status(400).json({ message: "Service ID is required" });
     }
 
-    // Updated populate configuration
-    const timeSlots = await TimeSlot.find(query).populate({
-      path: 'service',
-      select: 'name duration price bookingTimeLimit'
-    });
+    const serviceDoc = await Service.findById(service);
+    if (!serviceDoc) {
+      return res.status(404).json({ message: "Service not found" });
+    }
 
-    const filteredTimeSlots = timeSlots.filter(slot => {
-      if (!slot.service || typeof slot.service === 'string' || !('bookingTimeLimit' in slot.service)) {
-        return false;
+    const query = {
+      service,
+      isBooked: false,
+      startTime: {
+        $gte: Math.max(currentDate.getTime(), serviceDoc.startDate.getTime()),
+        $lte: serviceDoc.endDate
       }
-      const maxBookingDate = new Date();
-      maxBookingDate.setDate(maxBookingDate.getDate() + slot.service.bookingTimeLimit);
-      const slotStartTime = new Date(slot.startTime);
-      return slotStartTime <= maxBookingDate;
-    });
+    };
 
-    // Fetch holidays for the current year
-    const holidays = await getHolidays(COUNTRY_CODE, currentDate.getFullYear());
+    const timeSlots = await TimeSlot.find(query)
+      .populate('service')
+      .sort({ startTime: 1 });
 
-    // Update isHoliday field for each time slot
-    const updatedTimeSlots = await Promise.all(filteredTimeSlots.map(async (slot) => {
-      const slotStartTime = new Date(slot.startTime);
-      const slotIsHoliday = isHoliday(slotStartTime, holidays);
-      if (slot.isHoliday !== slotIsHoliday) {
-        slot.isHoliday = slotIsHoliday;
-        await slot.save();
-      }
-      return slot;
-    }));
-
-    res.json(updatedTimeSlots);
+    res.json(timeSlots);
   } catch (error) {
     if (error instanceof Error) {
       res.status(500).json({ message: error.message });
@@ -149,9 +143,9 @@ export const generateTimeSlotsForService = async (req: Request, res: Response) =
       return res.status(404).json({ message: "Service not found" });
     }
 
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + service.bookingTimeLimit);
+    // Use service's date range
+    const startDate = new Date(Math.max(new Date().getTime(), service.startDate.getTime()));
+    const endDate = new Date(service.endDate);
 
     // Delete existing future slots
     await TimeSlot.deleteMany({
@@ -183,11 +177,18 @@ export const generateTimeSlotsForService = async (req: Request, res: Response) =
 export const getTimeSlotsByService = async (req: Request, res: Response) => {
   try {
     const { serviceId } = req.params;
+    const service = await Service.findById(serviceId);
     
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
     const timeSlots = await TimeSlot.find({
       service: serviceId,
-      startTime: { $gte: new Date() }, // Only future time slots
-      isBooked: false
+      startTime: { 
+        $gte: Math.max(new Date().getTime(), service.startDate.getTime()),
+        $lte: service.endDate
+      }
     })
     .populate('service')
     .sort({ startTime: 1 });
