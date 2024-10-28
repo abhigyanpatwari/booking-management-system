@@ -103,14 +103,46 @@ const Bookings = () => {
   const handleTimeSlotSelect = async (slot) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
+      const userId = localStorage.getItem("userId");
+      
+      if (!userId || userId === "undefined") {
+        console.error("Invalid userId:", userId);
+        setError("Session expired. Please login again.");
+        navigate("/signin", { state: { from: "/bookings" } });
+        return;
+      }
+
+      console.log('Debug booking data:', {
+        timeSlot: slot._id,
+        patient: userId,
+        token: token ? 'present' : 'missing'
+      });
+
+      const response = await axios.post(
         "http://localhost:3000/api/v1/bookings",
-        { timeSlot: slot._id },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { 
+          timeSlot: slot._id,
+          patient: userId
+        },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
-      navigate("/dashboard");
+
+      if (response.data) {
+        navigate("/dashboard");
+      }
     } catch (error) {
-      setError("Failed to book appointment. Please try again.");
+      console.error("Booking error details:", {
+        error: error.response?.data,
+        userId: localStorage.getItem("userId"),
+        timeSlotId: slot._id,
+        fullError: error
+      });
+      setError(error.response?.data?.message || "Failed to book appointment. Please try again.");
     }
   };
 

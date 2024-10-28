@@ -85,10 +85,11 @@ const Dashboard = () => {
           ) : (
             <div className="space-y-4">
               {bookings.map((booking) => (
-                <div key={booking.id} className="bg-gray-100 p-4 rounded-lg">
-                  <p>{booking.date}</p>
-                  <p>{booking.time}</p>
-                  <p>{booking.service}</p>
+                <div key={booking._id} className="bg-gray-100 p-4 rounded-lg">
+                  <p>Date: {new Date(booking.timeSlot.startTime).toLocaleString()}</p>
+                  <p>Service: {booking.timeSlot.service.name}</p>
+                  <p>Duration: {booking.timeSlot.service.duration} minutes</p>
+                  <p>Price: ${booking.timeSlot.service.price}</p>
                 </div>
               ))}
             </div>

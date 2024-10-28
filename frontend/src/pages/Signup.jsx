@@ -1,10 +1,10 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { toast } from "react-toastify";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -25,66 +25,58 @@ const Signup = () => {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("isAdmin", response.data.isAdmin);
       localStorage.setItem("role", response.data.role);
+      localStorage.setItem("userId", response.data.userId); // Changed from response.data.user._id
       navigate("/dashboard");
     } catch (error) {
       console.error("Signup error:", error);
       setError(error.response?.data?.message || "Failed to sign up");
-      toast.error(error.response?.data?.message || "Failed to sign up");
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-8 p-4">
       <h1 className="text-3xl font-bold mb-6">Sign Up</h1>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Create an Account</CardTitle>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="bg-red-50 text-red-500 p-2 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <label htmlFor="name">Name</label>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
               <Input
-                id="name"
                 type="text"
+                placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="email">Email</label>
+            <div>
               <Input
-                id="email"
                 type="email"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="password">Password</label>
+            <div>
               <Input
-                id="password"
                 type="password"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
                 required
               />
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full">Sign Up</Button>
-          </CardFooter>
-        </form>
+            <Button type="submit">Sign Up</Button>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );
