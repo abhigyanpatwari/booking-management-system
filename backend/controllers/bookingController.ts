@@ -68,7 +68,16 @@ export const createBooking = async (req: Request, res: Response) => {
 
 export const getAllBookings = async (_req: Request, res: Response) => {
   try {
-    const bookings = await Booking.find().populate("patient").populate("timeSlot");
+    const bookings = await Booking.find()
+      .populate("patient")
+      .populate({
+        path: 'timeSlot',
+        populate: {
+          path: 'service',
+          select: 'name duration price'
+        }
+      })
+      .sort({ 'timeSlot.startTime': 1 });
     res.json(bookings);
   } catch (error) {
     if (error instanceof Error) {
