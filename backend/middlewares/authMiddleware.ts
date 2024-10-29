@@ -16,11 +16,25 @@ async function createSecretKey(secret: string): Promise<CryptoKey> {
   );
 }
 
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (req.user?.isAdmin) {
+export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const key = await createSecretKey(JWT_SECRET);
+    const payload = await verify(token, key);
+
+    if (!payload.isAdmin) {
+      return res.status(403).json({ message: "Access denied: Admin only" });
+    }
+
     next();
-  } else {
-    res.status(403).json({ message: "Access denied: Admin only" });
+  } catch (error) {
+    return res.status(403).json({ message: "Invalid token or insufficient privileges" });
   }
 };
 

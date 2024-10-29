@@ -8,9 +8,21 @@ import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Admin = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/admin/signin");
+  };
+
   return (
     <div className="container mx-auto mt-8">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button onClick={handleLogout} variant="outline">
+          Logout
+        </Button>
+      </div>
       <Tabs defaultValue="services">
         <TabsList>
           <TabsTrigger value="services">Services</TabsTrigger>

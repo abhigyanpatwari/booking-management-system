@@ -1,37 +1,63 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useContext } from "react";
-import { UserContext } from "@/context/UserContext";
+import { Link, useNavigate } from "react-router-dom";
+import { UserContext } from "../context/UserContext";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navbar = () => {
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    setUser(null);
+    navigate("/signin");
+  };
+
+  const getInitial = (name) => {
+    return name ? name.charAt(0).toUpperCase() : "U";
+  };
 
   return (
-    <nav className="border-b">
-      <div className="container mx-auto flex justify-between items-center py-4">
-        <div className="flex items-center space-x-2">
-          {user && (
-            <>
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                {user.name.charAt(0).toUpperCase()}
+    <nav className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          <div className="flex items-center space-x-3">
+            {user && (
+              <Link to="/dashboard" className="flex items-center space-x-3 px-3 py-2 rounded-md hover:bg-gray-100">
+                <Avatar>
+                  <AvatarFallback className="font-bold">{getInitial(user.name)}</AvatarFallback>
+                </Avatar>
+                <span className="text-gray-700">{user.name}</span>
+              </Link>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-6">
+            {user && (
+              <>
+                <Link to="/services" className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                  Services
+                </Link>
+                <Link to="/bookings" className="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100">
+                  Book Appointment
+                </Link>
+                <Button onClick={handleLogout} variant="outline">
+                  Logout
+                </Button>
+              </>
+            )}
+            {!user && (
+              <div className="flex space-x-4">
+                <Link to="/signin">
+                  <Button variant="outline">Sign In</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button>Sign Up</Button>
+                </Link>
               </div>
-              <span className="font-bold">{user.name}</span>
-            </>
-          )}
-        </div>
-        <div className="space-x-2">
-          <Button variant="ghost" asChild>
-            <Link to="/services">Services</Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link to="/bookings">Bookings</Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link to="/signin">Sign In</Link>
-          </Button>
-          <Button variant="default" asChild>
-            <Link to="/signup">Sign Up</Link>
-          </Button>
+            )}
+          </div>
         </div>
       </div>
     </nav>

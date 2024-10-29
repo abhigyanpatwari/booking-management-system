@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchBookings();
@@ -13,6 +15,13 @@ const BookingManagement = () => {
   const fetchBookings = async () => {
     try {
       const token = localStorage.getItem("token");
+      const isAdmin = localStorage.getItem("isAdmin") === "true";
+      
+      if (!isAdmin) {
+        navigate("/admin/signin");
+        return;
+      }
+
       const response = await axios.get("http://localhost:3000/api/v1/admin/bookings", {
         headers: { Authorization: `Bearer ${token}` },
       });

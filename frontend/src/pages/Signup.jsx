@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserContext } from "@/context/UserContext";
 
 const Signup = () => {
   const [name, setName] = useState("");
@@ -12,6 +13,7 @@ const Signup = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useContext(UserContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,10 +24,19 @@ const Signup = () => {
         email,
         password,
       });
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("isAdmin", response.data.isAdmin);
-      localStorage.setItem("role", response.data.role);
-      localStorage.setItem("userId", response.data.userId); // Changed from response.data.user._id
+
+      const { token, isAdmin, role, userId } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("isAdmin", isAdmin);
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", userId);
+
+      // Fetch and update user data in context
+      const userResponse = await axios.get("http://localhost:3000/api/v1/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(userResponse.data);
+
       navigate("/dashboard");
     } catch (error) {
       console.error("Signup error:", error);

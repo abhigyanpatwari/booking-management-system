@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,8 +78,14 @@ const Signin = () => {
                 required
               />
             </div>
-            <Button type="submit">Sign In</Button>
+            <Button type="submit" className="w-full">Sign In</Button>
           </form>
+          <div className="mt-4 text-center text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-blue-600 hover:underline">
+              Create one
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

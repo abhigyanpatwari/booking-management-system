@@ -18,7 +18,7 @@ const Dashboard = () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          navigate("/login");
+          navigate("/signin");
           return;
         }
 
@@ -39,6 +39,7 @@ const Dashboard = () => {
         console.error("Error fetching dashboard data:", error);
         setError("Failed to load dashboard data");
         setLoading(false);
+        navigate("/signin");
       }
     };
 

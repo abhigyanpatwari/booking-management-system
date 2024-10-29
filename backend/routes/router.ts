@@ -43,7 +43,8 @@ router.delete("/bookings/:id", authenticateToken, bookingController.cancelBookin
 router.get("/users/me", userController.getCurrentUser);
 
 // Admin routes
-router.get("/admin/check", (_req: Request, res: Response) => res.json({ isAdmin: true }));
+router.use('/admin', isAdmin);
+router.get("/admin/check", authController.checkAdminStatus);
 router.get("/admin/services", serviceController.getAllServices);
 router.post("/admin/services", serviceController.createService);
 router.put("/admin/services/:id", serviceController.updateService);

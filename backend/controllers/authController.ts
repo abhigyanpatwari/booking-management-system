@@ -78,13 +78,17 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Assuming password verification is implemented
+    // Direct password comparison
+    if (password !== user.password) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
     const token = await createJwtToken(user);
     res.status(200).json({ 
       token,
       isAdmin: user.isAdmin,
       role: user.role,
-      userId: user._id.toString() // Explicitly convert to string
+      userId: user._id.toString()
     });
   } catch (error) {
     if (error instanceof Error) {

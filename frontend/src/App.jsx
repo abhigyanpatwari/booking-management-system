@@ -8,6 +8,8 @@ import Services from "./pages/Services";
 import Bookings from "./pages/Bookings";
 import Navbar from "./components/Navbar";
 import Admin from "./pages/Admin";
+import AdminSignIn from "./pages/AdminSignIn";
+import AdminRoute from "./components/AdminRoute";
 import './App.css'
 
 function App() {
@@ -23,7 +25,15 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/services" element={<Services />} />
               <Route path="/bookings" element={<Bookings />} />
-              <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/signin" element={<AdminSignIn />} />
+              <Route
+                path="/admin/*"
+                element={
+                  <AdminRoute>
+                    <Admin />
+                  </AdminRoute>
+                }
+              />
               <Route path="/" element={<Dashboard />} />
             </Routes>
           </main>
