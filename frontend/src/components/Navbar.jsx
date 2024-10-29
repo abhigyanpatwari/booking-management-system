@@ -1,32 +1,24 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useContext } from "react";
+import { UserContext } from "@/context/UserContext";
 
 const Navbar = () => {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:3000/api/v1/admin/check", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsAdmin(response.data.isAdmin);
-      } catch (error) {
-        console.error("Error checking admin status:", error);
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, []);
+  const { user } = useContext(UserContext);
 
   return (
     <nav className="border-b">
       <div className="container mx-auto flex justify-between items-center py-4">
-        <Link to="/" className="text-2xl font-bold">Booking System</Link>
+        <div className="flex items-center space-x-2">
+          {user && (
+            <>
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <span className="font-bold">{user.name}</span>
+            </>
+          )}
+        </div>
         <div className="space-x-2">
           <Button variant="ghost" asChild>
             <Link to="/services">Services</Link>
@@ -34,11 +26,6 @@ const Navbar = () => {
           <Button variant="ghost" asChild>
             <Link to="/bookings">Bookings</Link>
           </Button>
-          {isAdmin && (
-            <Button variant="ghost" asChild>
-              <Link to="/admin">Admin</Link>
-            </Button>
-          )}
           <Button variant="ghost" asChild>
             <Link to="/signin">Sign In</Link>
           </Button>

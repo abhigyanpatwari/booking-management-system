@@ -1,16 +1,18 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserContext } from "@/context/UserContext";
 
 const Signin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { setUser } = useContext(UserContext);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,11 +22,17 @@ const Signin = () => {
         { email, password }
       );
 
-      const { token, isAdmin, role, userId } = response.data; // Changed from user._id to userId
+      const { token, isAdmin, role, userId } = response.data;
       localStorage.setItem("token", token);
       localStorage.setItem("isAdmin", isAdmin);
       localStorage.setItem("role", role);
-      localStorage.setItem("userId", userId); // Store userId directly
+      localStorage.setItem("userId", userId);
+
+      // Fetch and update user data in context
+      const userResponse = await axios.get("http://localhost:3000/api/v1/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(userResponse.data);
 
       // Redirect based on role
       if (isAdmin) {
