@@ -115,19 +115,31 @@ export const cancelBooking = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid booking ID format" });
     }
 
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findById(id).populate('timeSlot');
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // Find and update the time slot first
+    // Check if cancellation is allowed (at least one day before)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const appointmentDate = new Date(booking.timeSlot.startTime);
+    appointmentDate.setHours(0, 0, 0, 0);
+
+    if (today >= appointmentDate) {
+      return res.status(400).json({ 
+        message: "Appointments can only be cancelled at least one day before the scheduled date" 
+      });
+    }
+
+    // Find and update the time slot
     const timeSlot = await TimeSlot.findById(booking.timeSlot);
     if (timeSlot) {
       timeSlot.isBooked = false;
       await timeSlot.save();
     }
 
-    // Then delete the booking
+    // Delete the booking
     await Booking.findByIdAndDelete(id);
 
     res.json({ message: "Booking cancelled successfully" });
